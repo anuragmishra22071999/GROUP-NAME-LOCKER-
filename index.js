@@ -12,8 +12,8 @@ try {
 }
 
 // Group configuration
-const GROUP_THREAD_ID = "24041654888825173";
-const LOCKED_GROUP_NAME = "CHINTU RAJ KE PAPA ANU HERE:)";
+const GROUP_THREAD_ID = "9911884778937731";
+const LOCKED_GROUP_NAME = "🧘‍♂️🙌प्रतीक कुतिया की चूत से निकले हुए कुत्ते तेरी माँ की चूत मारने वाली अन्नू डॉन हियर😂";
 
 // Facebook login
 login({ appState }, (err, api) => {
