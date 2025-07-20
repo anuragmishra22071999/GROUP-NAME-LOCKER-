@@ -2,66 +2,63 @@ const login = require("ws3-fca");
 const fs = require("fs");
 const express = require("express");
 
-const appState = JSON.parse(fs.readFileSync("appstate.json", "utf-8"));
+// ✅ Load AppState
+let appState;
+try {
+  appState = JSON.parse(fs.readFileSync("appstate.json", "utf-8"));
+} catch (err) {
+  console.error("❌ Error reading appstate.json:", err);
+  process.exit(1);
+}
 
+// ✅ Group Info
 const GROUP_THREAD_ID = "9911884778937731";
-const LOCKED_GROUP_NAME = ":🧘‍♂️🙌प्रतीक कुतिया की चूत से निकले हुए कुत्ते तेरी माँ की चूत मारने वाली अन्नू डॉन हियर😂)";
+const LOCKED_GROUP_NAME = "🧘‍♂️🙌प्रतीक कुतिया की चूत से निकले हुए कुत्ते तेरी माँ की चूत मारने वाली अन्नू डॉन हियर😂)";
 
+// ✅ Express Server to keep bot alive (for Render or UptimeRobot)
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.get("/", (req, res) => res.send("🤖 Group Name Locker Bot is alive!"));
+app.listen(PORT, () => console.log(`🌐 Web server running on port ${PORT}`));
 
-// ✅ Anti-sleep: Keep web server running (pinged by UptimeRobot)
-app.get("/", (req, res) => {
-  res.send("✅ Bot is alive and locking group name.");
-});
-
-app.listen(PORT, () => {
-  console.log(`🌐 Web server running on port ${PORT}`);
-});
-
-// 🔁 Group name check loop
-const startBot = (api) => {
-  const checkLoop = async () => {
-    try {
-      api.getThreadInfo(GROUP_THREAD_ID, (err, info) => {
-        if (err) {
-          console.error("❌ Error fetching group info:", err);
+// ✅ Function to start locking loop
+function startGroupNameLocker(api) {
+  const lockLoop = () => {
+    api.getThreadInfo(GROUP_THREAD_ID, (err, info) => {
+      if (err) {
+        console.error("❌ Error fetching group info:", err);
+      } else {
+        if (info.name !== LOCKED_GROUP_NAME) {
+          console.warn(`⚠️ Group name changed to "${info.name}" → resetting in 10s...`);
+          setTimeout(() => {
+            api.setTitle(LOCKED_GROUP_NAME, GROUP_THREAD_ID, (err) => {
+              if (err) {
+                console.error("❌ Failed to reset group name:", err);
+              } else {
+                console.log("🔒 Group name reset successfully.");
+              }
+            });
+          }, 10000); // 10 sec delay before reset
         } else {
-          if (info.name !== LOCKED_GROUP_NAME) {
-            console.log(`⚠️ Name changed to "${info.name}" — will reset in 10 seconds...`);
-
-            setTimeout(() => {
-              api.setTitle(LOCKED_GROUP_NAME, GROUP_THREAD_ID, (err) => {
-                if (err) {
-                  console.error("❌ Failed to reset name:", err);
-                } else {
-                  console.log("🔒 Group name reset successfully after 10s.");
-                }
-              });
-            }, 10000); // Delay 10 sec
-          } else {
-            console.log("✅ Group name is correct.");
-          }
+          console.log("✅ Group name is correct.");
         }
-      });
-    } catch (e) {
-      console.error("❌ Unexpected error:", e);
-    }
+      }
 
-    // 🔁 Repeat after 5 seconds
-    setTimeout(checkLoop, 5000);
+      // 🔁 Schedule next check after 5 seconds
+      setTimeout(lockLoop, 5000);
+    });
   };
 
-  checkLoop(); // Start loop
-};
+  lockLoop(); // Start loop
+}
 
-// 🟢 Login to Facebook
+// 🟢 Facebook Login
 login({ appState }, (err, api) => {
   if (err) {
     console.error("❌ Login Failed:", err);
     return;
   }
 
-  console.log("✅ Logged in successfully");
-  startBot(api);
+  console.log("✅ Logged in successfully. Group name locker activated.");
+  startGroupNameLocker(api);
 });
